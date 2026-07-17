@@ -9,7 +9,8 @@ module.exports = async function handler(req, res) {
   Object.entries(headers).forEach(([key, value]) => res.setHeader(key, value));
 
   if (req.method === "OPTIONS") {
-    res.status(204).end();
+    res.statusCode = 204;
+    res.end();
     return;
   }
 
@@ -26,6 +27,7 @@ module.exports = async function handler(req, res) {
 
     sendJSON(res, 405, { error: "Method not allowed" });
   } catch (error) {
+    console.error(error);
     sendJSON(res, 500, { error: error.message || "Server error" });
   }
 };
@@ -179,7 +181,8 @@ function sendJSONP(req, res, statusCode, body) {
   const callback = req.query && req.query.callback ? String(req.query.callback).replace(/[^\w$.]/g, "") : "";
   if (callback) {
     res.setHeader("content-type", "application/javascript; charset=utf-8");
-    res.status(statusCode).send(`${callback}(${JSON.stringify(body)});`);
+    res.statusCode = statusCode;
+    res.end(`${callback}(${JSON.stringify(body)});`);
     return;
   }
   sendJSON(res, statusCode, body);
@@ -187,12 +190,14 @@ function sendJSONP(req, res, statusCode, body) {
 
 function sendJSON(res, statusCode, body) {
   res.setHeader("content-type", "application/json; charset=utf-8");
-  res.status(statusCode).send(JSON.stringify(body));
+  res.statusCode = statusCode;
+  res.end(JSON.stringify(body));
 }
 
 function sendFrame(res, script) {
   res.setHeader("content-type", "text/html; charset=utf-8");
-  res.status(200).send(`<!doctype html><meta charset="utf-8"><script>${script}</script>`);
+  res.statusCode = 200;
+  res.end(`<!doctype html><meta charset="utf-8"><script>${script}</script>`);
 }
 
 function safeScriptJSON(value) {

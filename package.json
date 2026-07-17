@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "start": "netlify dev",
+    "build": "echo \"Static site\""
+  },
+  "dependencies": {
+    "@netlify/blobs": "^9.1.2"
+  },
+  "devDependencies": {
+    "netlify-cli": "^22.1.3"
+  }
+}

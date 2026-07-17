@@ -1,0 +1,54 @@
+<script>
+window.manualCollectState=function(){
+  var root=document.querySelector(".reserveDetailWrapper")||document.body;
+  var texts={};
+  Array.prototype.slice.call(root.querySelectorAll("[data-sample-edit]")).forEach(function(el){
+    if(!el.closest("#manual-save-panel"))texts[el.dataset.sampleEdit]=el.textContent||"";
+  });
+  if(!Object.keys(texts).length){
+    Array.prototype.slice.call(root.querySelectorAll("*")).forEach(function(el,i){
+      if(!el.children.length&&el.textContent.trim()&&!el.closest("#manual-save-panel")&&!el.matches("script,style,noscript,path")){
+        el.dataset.sampleEdit=el.dataset.sampleEdit||String(i);
+        el.contentEditable="true";
+        texts[el.dataset.sampleEdit]=el.textContent||"";
+      }
+    });
+  }
+  var list=root.querySelector(".seatInfoListWrapper .infoListWrap > ul");
+  return {texts:texts,images:{},seatTotal:list?list.children.length:null};
+};
+window.manualMsg=function(t){
+  var el=document.getElementById("manual-save-message");
+  if(el)el.textContent=t;
+};
+window.manualRefreshList=function(){
+  fetch("/.netlify/functions/state?list=1&t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(data){
+    var s=document.getElementById("manual-save-list"); if(!s)return;
+    s.innerHTML='<option value="">저장한 값 목록</option>';
+    (data.list||[]).forEach(function(item){var o=document.createElement("option");o.value=item.name;o.textContent=item.name;s.appendChild(o);});
+  }).catch(function(){manualMsg("목록 불러오기 실패");});
+};
+window.manualSaveCurrent=function(){
+  var name=(document.getElementById("manual-save-name")||{}).value||"";
+  name=name.trim();
+  if(!name){manualMsg("저장 이름을 입력하세요");return;}
+  manualMsg("저장중...");
+  fetch("/.netlify/functions/state",{method:"POST",cache:"no-store",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"manual-save",name:name,state:manualCollectState()})})
+    .then(function(r){return r.text().then(function(t){if(!r.ok)throw new Error(t||"저장 실패");return t;});})
+    .then(function(){manualMsg("저장됨: "+name);manualRefreshList();})
+    .catch(function(e){manualMsg("저장 실패: "+(e.message||e));});
+};
+window.manualLoadSelected=function(){
+  var s=document.getElementById("manual-save-list"); var name=s&&s.value;
+  if(!name){manualMsg("불러올 저장값을 선택하세요");return;}
+  manualMsg("불러오는중...");
+  fetch("/.netlify/functions/state?name="+encodeURIComponent(name)+"&t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json();}).then(function(data){
+    Object.keys(data.texts||{}).forEach(function(k){var el=document.querySelector('[data-sample-edit="'+k.replace(/"/g,'\\"')+'"]');if(el)el.textContent=data.texts[k];});
+    manualMsg("불러옴: "+name);
+  }).catch(function(){manualMsg("불러오기 실패");});
+};
+setTimeout(function(){
+  manualRefreshList();
+  Array.prototype.slice.call(document.querySelectorAll("button,a")).forEach(function(el){if(!el.closest("#manual-save-panel"))return;el.contentEditable="false";});
+},500);
+</script>

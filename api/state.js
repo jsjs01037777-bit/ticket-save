@@ -32,14 +32,6 @@ module.exports = async function handler(req, res) {
   }
 };
 
-module.exports.config = {
-  api: {
-    bodyParser: {
-      sizeLimit: "8mb"
-    }
-  }
-};
-
 async function handleGET(req, res) {
   const query = req.query || {};
 

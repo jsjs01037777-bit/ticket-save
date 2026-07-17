@@ -205,8 +205,8 @@ function decodeMaybe(value) {
 }
 
 function githubConfig() {
-  const token = process.env.GITHUB_TOKEN;
-  const repo = process.env.GITHUB_REPO;
+  const token = cleanEnv(process.env.GITHUB_TOKEN);
+  const repo = cleanEnv(process.env.GITHUB_REPO);
   if (!token || !repo) {
     throw new Error("GITHUB_TOKEN and GITHUB_REPO are required");
   }
@@ -216,8 +216,12 @@ function githubConfig() {
     token,
     owner,
     name,
-    branch: process.env.GITHUB_BRANCH || "main"
+    branch: cleanEnv(process.env.GITHUB_BRANCH) || "main"
   };
+}
+
+function cleanEnv(value) {
+  return String(value || "").replace(/^\uFEFF/, "").trim();
 }
 
 async function githubFetch(path, options = {}) {

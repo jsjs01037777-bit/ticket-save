@@ -1,7 +1,7 @@
 module.exports = async function handler(req, res) {
   try {
-    const token = process.env.GITHUB_TOKEN;
-    const repo = process.env.GITHUB_REPO;
+    const token = cleanEnv(process.env.GITHUB_TOKEN);
+    const repo = cleanEnv(process.env.GITHUB_REPO);
     res.setHeader("content-type", "application/json; charset=utf-8");
     if (!token || !repo) {
       res.statusCode = 500;
@@ -23,3 +23,7 @@ module.exports = async function handler(req, res) {
     res.end(JSON.stringify({ ok: false, error: error.message }));
   }
 };
+
+function cleanEnv(value) {
+  return String(value || "").replace(/^\uFEFF/, "").trim();
+}

@@ -870,6 +870,85 @@ window.manualDeleteSelected=function(){
 };setTimeout(function(){manualCollectState();manualRefreshList();},300);
 </script><script>
 (function(){
+  function seatButtonFrom(target){
+    return target.closest&&target.closest(".seatInfoListWrapper .seatInfoListWrap .titleWrap button");
+  }
+  function clean(text){return String(text||"").replace(/\s+/g," ").trim();}
+  function ticketBase(text){
+    var m=String(text||"").match(/^(.*?)(\d+)$/);
+    return m?{prefix:m[1],num:Number(m[2]),width:m[2].length}:null;
+  }
+  function updateTicket(li,index){
+    var ticketSpan=li.querySelector('input[name="seatCheck"]');
+    var ticketText=li.querySelector(".checkData dl:first-child dd span");
+    var first=document.querySelector(".seatInfoListWrapper .infoListWrap > ul > li .checkData dl:first-child dd span");
+    var base=ticketBase(clean(first&&first.textContent));
+    if(base){
+      var next=base.prefix+String(base.num+index).padStart(base.width,"0");
+      if(ticketText)ticketText.textContent=next;
+      if(ticketSpan)ticketSpan.value=next;
+    }
+  }
+  function updateSeatNo(li,index){
+    var spans=li.querySelectorAll(".checkData dl dd span");
+    if(spans.length<4)return;
+    var first=document.querySelector(".seatInfoListWrapper .infoListWrap > ul > li .checkData dl:nth-child(4) dd span");
+    var m=clean(first&&first.textContent).match(/^(.*?)(\d+)$/);
+    if(m)spans[3].textContent=m[1]+String(Math.max(Number(m[2])-index,1));
+  }
+  function syncSeatCount(){
+    var list=document.querySelector(".seatInfoListWrapper .infoListWrap > ul");
+    if(!list)return;
+    var items=Array.prototype.slice.call(list.children);
+    var count=items.length;
+    var lastTicket=document.getElementById("lastTicketNo");
+    var seatCnt=document.getElementById("BSeatCnt");
+    if(seatCnt){seatCnt.dataset.bseatcnt=String(count);seatCnt.textContent="("+count+"매)";}
+    if(lastTicket&&items[0]){
+      var first=clean(items[0].querySelector(".checkData dl:first-child dd span")&&items[0].querySelector(".checkData dl:first-child dd span").textContent);
+      var last=clean(items[count-1].querySelector(".checkData dl:first-child dd span")&&items[count-1].querySelector(".checkData dl:first-child dd span").textContent);
+      lastTicket.dataset.lastticketno=last;
+      lastTicket.textContent=count>1?first+" ~ "+last:first;
+    }
+  }
+  function setSeatCount(count){
+    var list=document.querySelector(".seatInfoListWrapper .infoListWrap > ul");
+    if(!list)return;
+    var template=list.children[0]||(list.children[1]&&list.children[1].cloneNode(true));
+    if(!template)return;
+    while(list.children.length<count){
+      var li=template.cloneNode(true);
+      li.querySelectorAll("[data-sample-edit]").forEach(function(el){delete el.dataset.sampleEdit;});
+      li.querySelectorAll("input[type=checkbox]").forEach(function(input){input.checked=false;});
+      list.appendChild(li);
+    }
+    while(list.children.length>count)list.removeChild(list.lastElementChild);
+    Array.prototype.slice.call(list.children).forEach(function(li,index){
+      updateTicket(li,index);
+      updateSeatNo(li,index);
+    });
+    syncSeatCount();
+  }
+  function bindSeatButton(){
+    var btn=document.querySelector(".seatInfoListWrapper .seatInfoListWrap .titleWrap button");
+    if(!btn)return;
+    btn.contentEditable="false";
+    Array.prototype.slice.call(btn.querySelectorAll("*")).forEach(function(el){el.contentEditable="false";});
+  }
+  document.addEventListener("click",function(e){
+    var btn=seatButtonFrom(e.target);
+    if(!btn)return;
+    e.preventDefault();
+    e.stopPropagation();
+    bindSeatButton();
+    var list=document.querySelector(".seatInfoListWrapper .infoListWrap > ul");
+    if(!list)return;
+    setSeatCount(list.children.length>=4?1:list.children.length+1);
+  },true);
+  setTimeout(bindSeatButton,350);
+})();
+</script><script>
+(function(){
   var dayNames=["일","월","화","수","목","금","토"];
   function pad(n){return String(n).padStart(2,"0");}
   function addDays(date,days){var d=new Date(date.getFullYear(),date.getMonth(),date.getDate());d.setDate(d.getDate()+days);return d;}

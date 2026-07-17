@@ -846,6 +846,7 @@ window.manualApplyLoaded=function(data){
     }
   }
   if(window.autoCancelInit)setTimeout(window.autoCancelInit,120);
+  if(window.paymentAutoInit)setTimeout(window.paymentAutoInit,120);
   if(data.name){var input=document.getElementById("manual-save-name");if(input)input.value=data.name;manualMsg("불러옴: "+data.name+" (전체 적용)");}else{manualMsg("불러옴 (전체 적용)");}
 };
 window.manualLoadSelected=function(){
@@ -910,6 +911,7 @@ window.manualDeleteSelected=function(){
       lastTicket.dataset.lastticketno=last;
       lastTicket.textContent=count>1?first+" ~ "+last:first;
     }
+    if(window.updatePaymentAutomation)window.updatePaymentAutomation();
   }
   function setSeatCount(count){
     var list=document.querySelector(".seatInfoListWrapper .infoListWrap > ul");
@@ -946,6 +948,79 @@ window.manualDeleteSelected=function(){
     setSeatCount(list.children.length>=4?1:list.children.length+1);
   },true);
   setTimeout(bindSeatButton,350);
+})();
+</script><script>
+(function(){
+  var dayNames=["일","월","화","수","목","금","토"];
+  function clean(text){return String(text||"").replace(/\s+/g," ").trim();}
+  function pad(n){return String(n).padStart(2,"0");}
+  function parseMoney(text){
+    var m=String(text||"").match(/-?\d[\d,]*/);
+    var n=m?Number(m[0].replace(/,/g,"")):0;
+    return isNaN(n)?0:n;
+  }
+  function formatMoney(n){
+    return Math.max(0,n).toLocaleString("ko-KR")+"원";
+  }
+  function findValue(sectionSelector,label){
+    var rows=document.querySelectorAll(sectionSelector+" dl");
+    for(var i=0;i<rows.length;i++){
+      var dt=rows[i].querySelector("dt");
+      if(clean(dt&&dt.textContent)===label)return rows[i].querySelector("dd span");
+    }
+    return null;
+  }
+  function parseDate(text){
+    var m=String(text||"").match(/(20\d{2})[.\-/년\s]+(\d{1,2})[.\-/월\s]+(\d{1,2})/);
+    if(!m)return null;
+    var d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));
+    return isNaN(d.getTime())?null:d;
+  }
+  function fmtDay(date){
+    return date.getFullYear()+"."+pad(date.getMonth()+1)+"."+pad(date.getDate())+"("+dayNames[date.getDay()]+")";
+  }
+  function seatCount(){
+    var list=document.querySelector(".seatInfoListWrapper .infoListWrap > ul");
+    return list&&list.children.length?list.children.length:1;
+  }
+  function updatePaymentAutomation(){
+    var amountEl=findValue(".paymentInfo","금액");
+    var feeEl=findValue(".paymentInfo","수수료");
+    var totalEl=findValue(".paymentInfo","총 결제금액");
+    var fee=seatCount()*2000;
+    if(feeEl)feeEl.textContent=formatMoney(fee);
+    if(totalEl)totalEl.textContent=formatMoney(parseMoney(amountEl&&amountEl.textContent)+fee);
+
+    var date=parseDate((document.getElementById("BDate")||{}).textContent);
+    var deadlineEl=findValue(".paymentDetail","입금마감일시");
+    if(date&&deadlineEl)deadlineEl.textContent=fmtDay(date)+" 23:59";
+  }
+  function bindPaymentAutomation(){
+    var amountEl=findValue(".paymentInfo","금액");
+    var bDate=document.getElementById("BDate");
+    [amountEl,bDate].forEach(function(el){
+      if(!el||el.dataset.paymentAutoBound==="1")return;
+      el.dataset.paymentAutoBound="1";
+      ["input","keyup","blur","compositionend"].forEach(function(type){
+        el.addEventListener(type,function(){setTimeout(updatePaymentAutomation,0);});
+      });
+      if(el===amountEl){
+        el.addEventListener("click",function(){
+          var sel=window.getSelection&&window.getSelection();
+          if(!sel)return;
+          var range=document.createRange();
+          range.selectNodeContents(el);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        });
+      }
+      new MutationObserver(updatePaymentAutomation).observe(el,{childList:true,characterData:true,subtree:true});
+    });
+    updatePaymentAutomation();
+  }
+  window.updatePaymentAutomation=updatePaymentAutomation;
+  window.paymentAutoInit=bindPaymentAutomation;
+  setTimeout(bindPaymentAutomation,450);
 })();
 </script><script>
 (function(){

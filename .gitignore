@@ -4,3 +4,5 @@ node_modules/
 dist-functions/
 .vercel/
 npm-debug.log*
+
+.vercel

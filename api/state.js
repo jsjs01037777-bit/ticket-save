@@ -5,7 +5,7 @@ const headers = {
   "cache-control": "no-store"
 };
 
-async function handler(req, res) {
+module.exports = async function handler(req, res) {
   Object.entries(headers).forEach(([key, value]) => res.setHeader(key, value));
 
   if (req.method === "OPTIONS") {
@@ -28,9 +28,8 @@ async function handler(req, res) {
   } catch (error) {
     sendJSON(res, 500, { error: error.message || "Server error" });
   }
-}
+};
 
-module.exports = handler;
 module.exports.config = {
   api: {
     bodyParser: {
@@ -161,7 +160,10 @@ function parseBody(req) {
   const body = req.body || {};
   const contentType = String(req.headers["content-type"] || "");
 
-  if (typeof body === "object" && !Buffer.isBuffer(body)) return body;
+  if (typeof body === "object" && !Buffer.isBuffer(body)) {
+    if (body.payload) return JSON.parse(body.payload);
+    return body;
+  }
   const raw = Buffer.isBuffer(body) ? body.toString("utf8") : String(body || "{}");
 
   if (contentType.includes("application/x-www-form-urlencoded")) {
